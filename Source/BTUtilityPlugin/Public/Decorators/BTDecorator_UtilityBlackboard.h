@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Decorators/BTDecorator_UtilityFunction.h"
+#include "BehaviorTree/Decorators/BTDecorator_Blackboard.h"
 #include "BTDecorator_UtilityBlackboard.generated.h"
 
 
@@ -27,13 +28,25 @@ class BTUTILITYPLUGIN_API UBTDecorator_UtilityBlackboard : public UBTDecorator_U
 	/** get name of selected blackboard key */
 	FName GetSelectedBlackboardKey() const;
 
+	virtual EBlackboardNotificationResult OnBlackboardKeyValueChange(const UBlackboardComponent& Blackboard, FBlackboard::FKey ChangedKeyID);
+
 protected:
 	/** blackboard key selector */
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector UtilityValueKey;
 
+	/** when observer can try to request abort? */
+	UPROPERTY(Category = FlowControl, EditAnywhere)
+	TEnumAsByte<EBTBlackboardRestart::Type> NotifyObserver;
+
 protected:
 	virtual float CalculateUtilityValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
+
+	/** called when execution flow controller becomes active */
+	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	/** called when execution flow controller becomes inactive */
+	virtual void OnCeaseRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -11,6 +11,15 @@ Super(ObjectInitializer)
 {
 	NodeName = "Blackboard Utility";
 
+	bAllowAbortNone = true;
+	bAllowAbortLowerPri = true;
+	bAllowAbortChildNodes = true;
+
+	bNotifyBecomeRelevant = true;
+	bNotifyCeaseRelevant = true;
+
+	NotifyObserver = EBTBlackboardRestart::ResultChange;
+
 	// accept only float and integer keys
 	UtilityValueKey.AddFloatFilter(this, GET_MEMBER_NAME_CHECKED(UBTDecorator_UtilityBlackboard, UtilityValueKey));
 	UtilityValueKey.AddIntFilter(this, GET_MEMBER_NAME_CHECKED(UBTDecorator_UtilityBlackboard, UtilityValueKey));
@@ -40,6 +49,27 @@ float UBTDecorator_UtilityBlackboard::CalculateUtilityValue(UBehaviorTreeCompone
 	return FMath::Max(Value, 0.0f);
 }
 
+void UBTDecorator_UtilityBlackboard::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	UE_LOG(LogTemp, Log, TEXT("UBTDecorator_UtilityBlackboard::OnBecomeRelevant"));
+	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+	if (BlackboardComp)
+	{
+		auto KeyID = UtilityValueKey.GetSelectedKeyID();
+		BlackboardComp->RegisterObserver(KeyID, this, FOnBlackboardChangeNotification::CreateUObject(this, &UBTDecorator_UtilityBlackboard::OnBlackboardKeyValueChange));
+	}
+}
+
+void UBTDecorator_UtilityBlackboard::OnCeaseRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	UE_LOG(LogTemp, Log, TEXT("UBTDecorator_UtilityBlackboard::OnCeaseRelevant"));
+	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+	if (BlackboardComp)
+	{
+		BlackboardComp->UnregisterObserversFrom(this);
+	}
+}
+
 FString UBTDecorator_UtilityBlackboard::GetStaticDescription() const
 {
 	return FString::Printf(TEXT("Utility Key: %s"), *GetSelectedBlackboardKey().ToString());
@@ -60,4 +90,23 @@ void UBTDecorator_UtilityBlackboard::DescribeRuntimeValues(const UBehaviorTreeCo
 	Values.Add(FString::Printf(TEXT("utility: %s"), *DescKeyValue));
 }
 
+EBlackboardNotificationResult UBTDecorator_UtilityBlackboard::OnBlackboardKeyValueChange(const UBlackboardComponent& Blackboard, FBlackboard::FKey ChangedKeyID)
+{
+	UE_LOG(LogTemp, Log, TEXT("UBTDecorator_UtilityBlackboard::OnBlackboardKeyValueChange"));
+	UBehaviorTreeComponent* BehaviorComp = (UBehaviorTreeComponent*)Blackboard.GetBrainComponent();
+	if (BehaviorComp == nullptr)
+	{
+		return EBlackboardNotificationResult::RemoveObserver;
+	}
+
+	if (UtilityValueKey.GetSelectedKeyID() == ChangedKeyID)
+	{
+		// can't simply use BehaviorComp->RequestExecution(this) here, we need to support condition/value change modes
+
+		const EBTDecoratorAbortRequest RequestMode = (NotifyObserver == EBTBlackboardRestart::ValueChange) ? EBTDecoratorAbortRequest::ConditionPassing : EBTDecoratorAbortRequest::ConditionResultChanged;
+		ConditionalFlowAbort(*BehaviorComp, RequestMode);
+	}
+
+	return EBlackboardNotificationResult::ContinueObserving;
+}
 
