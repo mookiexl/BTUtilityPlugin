@@ -9,7 +9,8 @@
 UBTComposite_Utility::UBTComposite_Utility(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	NodeName = "Utility";
-	bUseNodeActivationNotify = true;
+   	bUseNodeActivationNotify = true;
+// 	bUseChildExecutionNotify = true;
 
 	SelectionMethod = EUtilitySelectionMethod::Priority;
 
@@ -91,7 +92,7 @@ bool UBTComposite_Utility::EvaluateUtilityScores(FBehaviorTreeSearchData& Search
 		
 		// Calculate utility value
 		auto Score = UtilityFunc ?
-			UtilityFunc->WrappedCalculateUtility(SearchData.OwnerComp, UtilityFunc->GetNodeMemory< uint8 >(SearchData)) :
+			UtilityFunc->GetUtility() :
 			0.0f;
 
 		OutScores.Add(Score);
@@ -101,8 +102,14 @@ bool UBTComposite_Utility::EvaluateUtilityScores(FBehaviorTreeSearchData& Search
 	return bIsNonZeroScore;
 }
 
+void UBTComposite_Utility::NotifyChildExecution(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, int32 ChildIdx, EBTNodeResult::Type& NodeResult) const
+{
+	UE_LOG(LogTemp, Log, TEXT("UBTComposite_Utility::NotifyChildExecution"));
+}
+
 void UBTComposite_Utility::NotifyNodeActivation(FBehaviorTreeSearchData& SearchData) const
 {
+	UE_LOG(LogTemp, Log, TEXT("UBTComposite_Utility::NotifyNodeActivation"));
 	FBTUtilityMemory* NodeMemory = GetNodeMemory<FBTUtilityMemory>(SearchData);
 
 	// Evaluate utility scores for each child
@@ -125,6 +132,7 @@ void UBTComposite_Utility::NotifyNodeActivation(FBehaviorTreeSearchData& SearchD
 
 int32 UBTComposite_Utility::GetNextChildHandler(FBehaviorTreeSearchData& SearchData, int32 PrevChild, EBTNodeResult::Type LastResult) const
 {
+	return BTSpecialChild::ReturnToParent; // debug remove
 	FBTUtilityMemory* NodeMemory = GetNodeMemory<FBTUtilityMemory>(SearchData);
 
 	// success = quit

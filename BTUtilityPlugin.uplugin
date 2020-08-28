@@ -1,7 +1,7 @@
 {
 	"FileVersion" : 3,
 	"Version" : 2,
-	"VersionName" : "UE4.16-K2",
+	"VersionName" : "UE4.24-K2",
 	"FriendlyName" : "BT Utility",
 	"Description" : "Adds nodes for extending behavior tree with utility-based selection.",
 	"Category" : "Kantan Dev",

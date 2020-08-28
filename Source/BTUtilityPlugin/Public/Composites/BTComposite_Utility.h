@@ -57,6 +57,13 @@ protected:
 	*/
 	bool EvaluateUtilityScores(FBehaviorTreeSearchData& SearchData, TArray< float >& OutScores) const;
 
+	/**
+	 * Called just after child execution, allows to modify result.
+	 * 
+	 * Overriding to see if we can use this to implement aborts.
+	 */
+	virtual void NotifyChildExecution(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, int32 ChildIdx, EBTNodeResult::Type& NodeResult) const;
+
 protected:
 	virtual void NotifyNodeActivation(FBehaviorTreeSearchData& SearchData) const override;
 
