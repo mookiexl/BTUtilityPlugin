@@ -4,12 +4,15 @@
 #include "Decorators/BTDecorator_UtilityFunction.h"
 #include "UtilitySelectionMethods/BTUtilitySelectionMethod_Highest.h"
 #include "UtilitySelectionMethods/BTUtilitySelectionMethod_Proportional.h"
+#include "Decorators/BTDecorator_UtilityBlackboard.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 
 UBTComposite_Utility::UBTComposite_Utility(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	NodeName = "Utility";
 	bUseNodeActivationNotify = true;
+	bUseNodeDeactivationNotify = true;
 
 	SelectionMethod = EUtilitySelectionMethod::Priority;
 
@@ -101,7 +104,7 @@ bool UBTComposite_Utility::EvaluateUtilityScores(FBehaviorTreeSearchData& Search
 	return bIsNonZeroScore;
 }
 
-void UBTComposite_Utility::NotifyNodeActivation(FBehaviorTreeSearchData& SearchData) const
+void UBTComposite_Utility::OrderUtilityScores(FBehaviorTreeSearchData& SearchData) const
 {
 	FBTUtilityMemory* NodeMemory = GetNodeMemory<FBTUtilityMemory>(SearchData);
 
@@ -120,6 +123,83 @@ void UBTComposite_Utility::NotifyNodeActivation(FBehaviorTreeSearchData& SearchD
 		break;
 	default:
 		check(false);
+	}
+}
+
+void UBTComposite_Utility::NotifyNodeActivation(FBehaviorTreeSearchData& SearchData) const
+{
+	OrderUtilityScores(SearchData);
+
+	// monitor for changes to utility while we're executing
+	WatchChildBlackboardKeys(SearchData);
+}
+
+void UBTComposite_Utility::NotifyNodeDeactivation(FBehaviorTreeSearchData& SearchData, EBTNodeResult::Type& NodeResult) const
+{
+	// stop monitoring for changes to utility now that we're no longer executing
+	UnwatchChildBlackboardKeys(SearchData);
+}
+
+void UBTComposite_Utility::WatchChildBlackboardKeys(FBehaviorTreeSearchData& SearchData) const
+{
+	// for each child task
+	for (int32 Idx = 0; Idx < GetChildrenNum(); ++Idx)
+	{
+		// for each of their decorators
+		FBTCompositeChild const& ChildInfo = Children[Idx];
+		for (UBTDecorator* Dec : ChildInfo.Decorators)
+		{
+			// look for a UtilityBlackboard one
+			UBTDecorator_UtilityBlackboard* AsBlackboardUtility = Cast<UBTDecorator_UtilityBlackboard>(Dec);
+			if (AsBlackboardUtility)
+			{
+				// get the key
+				FBlackboardKeySelector SelectedBlackboardKeySelector = AsBlackboardUtility->GetSelectedBlackboardKeySelector();
+
+				// watch its key
+				UBlackboardComponent* BlackboardComp = SearchData.OwnerComp.GetBlackboardComponent();
+				if (BlackboardComp)
+				{
+					auto KeyID = SelectedBlackboardKeySelector.GetSelectedKeyID();
+					BlackboardComp->RegisterObserver(KeyID, AsBlackboardUtility, FOnBlackboardChangeNotification::CreateUObject(AsBlackboardUtility, &UBTDecorator_UtilityBlackboard::OnBlackboardKeyValueChange));
+				}
+
+				// Just use the first one. Multiple utility function decorators on a single node is a user
+				// error, and generates a warning in the behavior tree editor.
+				break;
+			}
+		}
+	}
+}
+
+void UBTComposite_Utility::UnwatchChildBlackboardKeys(FBehaviorTreeSearchData& SearchData) const
+{
+	// for each child task
+	for (int32 Idx = 0; Idx < GetChildrenNum(); ++Idx)
+	{
+		// for each of their decorators
+		FBTCompositeChild const& ChildInfo = Children[Idx];
+		for (UBTDecorator* Dec : ChildInfo.Decorators)
+		{
+			// look for a UtilityBlackboard one
+			UBTDecorator_UtilityBlackboard* AsBlackboardUtility = Cast<UBTDecorator_UtilityBlackboard>(Dec);
+			if (AsBlackboardUtility)
+			{
+				// get the key
+				FBlackboardKeySelector SelectedBlackboardKeySelector = AsBlackboardUtility->GetSelectedBlackboardKeySelector();
+
+				// unwatch its key
+				UBlackboardComponent* BlackboardComp = SearchData.OwnerComp.GetBlackboardComponent();
+				if (BlackboardComp)
+				{
+					BlackboardComp->UnregisterObserversFrom(AsBlackboardUtility);
+				}
+
+				// Just use the first one. Multiple utility function decorators on a single node is a user
+				// error, and generates a warning in the behavior tree editor.
+				break;
+			}
+		}
 	}
 }
 

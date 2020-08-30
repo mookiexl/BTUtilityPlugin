@@ -23,6 +23,24 @@ void UBTDecorator_UtilityBlackboard::InitializeFromAsset(UBehaviorTree& Asset)
 	UtilityValueKey.ResolveSelectedKey(*GetBlackboardAsset());
 }
 
+EBlackboardNotificationResult UBTDecorator_UtilityBlackboard::OnBlackboardKeyValueChange(const UBlackboardComponent& Blackboard, FBlackboard::FKey ChangedKeyID)
+{
+	UBehaviorTreeComponent* BehaviorComp = (UBehaviorTreeComponent*)Blackboard.GetBrainComponent();
+	if (BehaviorComp == nullptr)
+	{
+		return EBlackboardNotificationResult::RemoveObserver;
+	}
+
+	if (UtilityValueKey.GetSelectedKeyID() == ChangedKeyID)
+	{
+		// can't simply use BehaviorComp->RequestExecution(this) here, we need to support condition/value change modes
+
+		BehaviorComp->RequestExecution(this);
+	}
+
+	return EBlackboardNotificationResult::ContinueObserving;
+}
+
 float UBTDecorator_UtilityBlackboard::CalculateUtilityValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const
 {
 	const UBlackboardComponent* MyBlackboard = OwnerComp.GetBlackboardComponent();
