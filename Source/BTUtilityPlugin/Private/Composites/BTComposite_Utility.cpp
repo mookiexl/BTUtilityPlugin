@@ -16,7 +16,8 @@ UBTComposite_Utility::UBTComposite_Utility(const FObjectInitializer& ObjectIniti
 
 	SelectionMethod = EUtilitySelectionMethod::Priority;
 
-	OnNextChild.BindUObject(this, &UBTComposite_Utility::GetNextChildHandler);
+	// no longer needed
+	//OnNextChild.BindUObject(this, &UBTComposite_Utility::GetNextChildHandler);
 }
 
 void UBTComposite_Utility::InitializeMemory(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTMemoryInit::Type InitType) const

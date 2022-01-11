@@ -1,10 +1,10 @@
 {
 	"FileVersion" : 3,
 	"Version" : 2,
-	"VersionName" : "UE4.16-K2",
+	"VersionName" : "UE5.00",
 	"FriendlyName" : "BT Utility",
 	"Description" : "Adds nodes for extending behavior tree with utility-based selection.",
-	"Category" : "Kantan Dev",
+	"Category" : "AI",
 	"CreatedBy" : "Kantan Dev",
 	"CreatedByURL" : "http://kantandev.com",
 	"DocsURL" : "",
@@ -24,6 +24,7 @@
 			"WhitelistPlatforms" :
 			[
 				"Win64",
+				"Linux",
 				"Android"
 			]
 		}
