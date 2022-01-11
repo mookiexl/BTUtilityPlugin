@@ -35,7 +35,7 @@ EBlackboardNotificationResult UBTDecorator_UtilityBlackboard::OnBlackboardKeyVal
 	{
 		// can't simply use BehaviorComp->RequestExecution(this) here, we need to support condition/value change modes
 
-		BehaviorComp->RequestExecution(this);
+		BehaviorComp->RequestExecution(GetParentNode(), BehaviorComp->FindInstanceContainingNode(this), this, this->GetChildIndex(), EBTNodeResult::InProgress);
 	}
 
 	return EBlackboardNotificationResult::ContinueObserving;
